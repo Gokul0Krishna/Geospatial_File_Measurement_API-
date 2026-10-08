@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geo-measure-api"
+version = "1.0.0"
+description = "FastAPI service that measures Shapefile and KML features (area / length) with correct CRS handling."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "gunicorn>=22.0",
+  "pydantic-settings>=2.4",
+  "python-multipart>=0.0.9",
+  "sqlalchemy[asyncio]>=2.0.30",
+  "alembic>=1.13",
+  "asyncpg>=0.29",
+  "aiosqlite>=0.20",
+  "arq>=0.26",
+  "pyogrio>=0.10",
+  "pyarrow>=15",
+  "shapely>=2.0.4",
+  "pyproj>=3.6",
+]
+
+[project.optional-dependencies]
+mysql = ["asyncmy>=0.2.9"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "httpx>=0.27", "pyshp>=2.3", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = [
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated:DeprecationWarning",
+  "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "SIM"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501", "SIM117"]
+"scripts/*" = ["E501"]

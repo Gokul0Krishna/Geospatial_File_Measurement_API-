@@ -1,0 +1,40 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgres]
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: geo, POSTGRES_PASSWORD: geo, POSTGRES_DB: geo_test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U geo" --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - name: Migrations match the models
+        if: matrix.database == 'postgres'
+        env:
+          DATABASE_URL: postgresql+asyncpg://geo:geo@localhost:5432/geo_test
+        run: alembic upgrade head && alembic check
+      - name: Tests
+        env:
+          TEST_REDIS_URL: redis://localhost:6379/15
+          TEST_DATABASE_URL: ${{ matrix.database == 'postgres' && 'postgresql+asyncpg://geo:geo@localhost:5432/geo_test' || '' }}
+        run: pytest -q
